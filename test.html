@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>정보 교과 및 컴퓨터 구조 가로세로 낱말 퍼즐</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column; /* Column for top-bottom layout */
+            align-items: center; /* Center horizontally */
+            gap: 40px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            width: 90%;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            border: 2px solid #34495e;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px; /* Space between puzzle and hints */
+        }
+        .grid-cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #555;
+            background-color: #ecf0f1;
+            position: relative;
+        }
+        .grid-cell input {
+            width: 90%;
+            height: 90%;
+            text-align: center;
+            border: none;
+            font-size: 1.5em;
+            text-transform: uppercase;
+            background-color: transparent;
+            outline: none;
+            color: #2c3e50;
+        }
+        .grid-cell.black {
+            background-color: #34495e;
+            pointer-events: none; /* Make black cells non-interactive */
+        }
+        .grid-cell .clue-number {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 0.7em;
+            color: #888;
+        }
+        .clues-wrapper { /* Wrapper to hold horizontal and vertical hints side by side */
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            width: 100%;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+        .clues-container {
+            flex: 1;
+            min-width: 300px;
+            max-width: 45%; /* Adjusted max-width for side-by-side */
+        }
+        .clues-container h2 {
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 5px;
+        }
+        .clues-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .clues-list li {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            line-height: 1.4;
+        }
+        .clues-list li strong {
+            color: #e74c3c;
+        }
+        button {
+            margin-top: 30px;
+            padding: 12px 25px;
+            font-size: 1.2em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            min-height: 30px; /* To prevent layout shift */
+        }
+        .correct {
+            color: #28a745;
+        }
+        .incorrect {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>정보 교과 및 컴퓨터 구조 가로세로 낱말 퍼즐</h1>
+
+    <div class="main-content">
+        <div class="grid-container" id="crossword-grid">
+            </div>
+
+        <div class="clues-wrapper">
+            <div class="clues-container">
+                <h2>가로퍼즐 Hint</h2>
+                <ul class="clues-list">
+                    [cite_start]<li><strong>1.</strong> 컴퓨터 언어를 사용하여 프로그램을 작성하는 행위. [cite: 3]</li>
+                    [cite_start]<li><strong>2.</strong> 어떤 문제를 해결하기 위한 단계적이고 논리적인 절차나 방법들의 집합. [cite: 4]</li>
+                    [cite_start]<li><strong>3.</strong> 컴퓨터 시스템을 작동시키고 특정 작업을 수행하도록 하는 프로그램과 데이터. [cite: 5]</li>
+                    [cite_start]<li><strong>4.</strong> 컴퓨터가 처리한 결과를 모니터나 프린터 등으로 외부에 보여주는 과정. [cite: 6]</li>
+                    [cite_start]<li><strong>5.</strong> 8개의 비트(bit)가 모여 하나의 문자를 표현하는 정보의 단위. [cite: 7]</li>
+                    [cite_start]<li><strong>6.</strong> 컴퓨터 시스템에 침투하여 정보를 손상시키거나 오작동을 유발하는 악성 프로그램. [cite: 8]</li>
+                </ul>
+            </div>
+
+            <div class="clues-container">
+                <h2>세로퍼즐 Hint</h2>
+                <ul class="clues-list">
+                    [cite_start]<li><strong>1.</strong> 컴퓨터 시스템이 작업을 수행하는 데 필요한 모든 유무형의 자원을 총칭하는 개념. [cite: 10]</li>
+                    <li><strong>2.</strong> 컴퓨터를 구성하는 물리적인 부품이나 장치들. [cite_start](예: CPU, 메모리, 키보드) [cite: 11]</li>
+                    [cite_start]<li><strong>3.</strong> 키보드나 마우스 등을 통해 데이터를 컴퓨터로 받아들이는 과정. [cite: 12]</li>
+                    [cite_start]<li><strong>4.</strong> 정보의 가장 작은 단위로, 0 또는 1의 두 가지 값 중 하나를 가짐. [cite: 13]</li>
+                    [cite_start]<li><strong>5.</strong> 기존의 데이터 처리 방식으로는 수집, 저장, 분석하기 어려울 정도로 방대하고 다양한 형태의 대규모 데이터를 의미함. [cite: 14]</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <button onclick="checkAnswers()">정답 확인</button>
+    <div id="result"></div>
+
+    <script>
+        // PDF 이미지의 격자 모습에 정확히 일치하는 정답 글자 배치
+        const solution = {
+            // Row 0
+            '0,0': '코', '0,1': '딩',
+            '0,4': '하',
+            '0,6': '입',
+            // Row 1
+            '1,0': '알', '1,1': '고', '1,2': '리', '1,3': '즘',
+            '1,5': '출', '1,6': '력',
+            // Row 2
+            '2,2': '소', '2,3': '프', '2,4': '트', '2,5': '웨', '2,6': '어',
+            // Row 3
+            '3,0': '빅', '3,1': '데', '3,2': '이', '3,3': '터',
+            // Row 4는 PDF 이미지상 모두 검은색 칸입니다.
+            // Row 5
+            '5,0': '바', '5,1': '이', '5,2': '러', '5,3': '스',
+            '5,5': '바', '5,6': '이', '5,7': '트',
+            // Row 6
+            '6,1': '터', // PDF 이미지 상 '터' 글자가 존재하는 칸
+            // Row 7
+            '7,0': '비', '7,1': '트'
+        };
+
+        // PDF 이미지의 검은색 칸 위치에 정확히 일치
+        const blackCells = [
+            [0, 2], [0, 3], [0, 5], [0, 7],
+            [1, 4], [1, 7],
+            [2, 0], [2, 1], [2, 7],
+            [3, 4], [3, 5], [3, 6], [3, 7],
+            [4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], // Row 4 전체 검은색
+            [5, 4],
+            [6, 0], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7],
+            [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7]
+        ];
+
+        // PDF 이미지에 표시된 단서 번호의 위치에 정확히 일치
+        const clueNumbers = {
+            // 가로 번호
+            '0,0': { num: '1' }, // 1가
+            '1,0': { num: '2' }, // 2가
+            '2,2': { num: '3' }, // 3가
+            '3,0': { num: '5' }, // 5가 (빅데이터)
+            '5,0': { num: '6' }, // 6가 (바이러스)
+            '5,5': { num: '5' }, // 5가 (바이트) - PDF에 5번이 두 번 사용됨
+
+            // 세로 번호 (PDF 이미지에 표시된 대로)
+            '0,4': { num: '2' }, // 2세 (하)
+            '0,6': { num: '3' }, // 3세 (입)
+            '1,2': { num: '1' }, // 1세 (리)
+            '1,5': { num: '4' }, // 4세 (출)
+            '7,0': { num: '4' }  // 4세 (비) - PDF에 4번이 두 번 사용됨
+        };
+
+        const crosswordGrid = document.getElementById('crossword-grid');
+
+        // 그리드 초기화
+        function initializeGrid() {
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    // 검은색 셀 처리
+                    const isBlack = blackCells.some(bc => bc[0] === r && bc[1] === c);
+                    if (isBlack) {
+                        cell.classList.add('black');
+                    } else {
+                        const input = document.createElement('input');
+                        input.setAttribute('type', 'text');
+                        input.setAttribute('maxlength', '1');
+                        input.setAttribute('data-row', r);
+                        input.setAttribute('data-col', c);
+                        cell.appendChild(input);
+                    }
+                    crosswordGrid.appendChild(cell);
+                }
+            }
+            addClueNumbersToGrid();
+        }
+
+        // 단서 번호 추가 (방향 제거)
+        function addClueNumbersToGrid() {
+            for (const key in clueNumbers) {
+                const [r, c] = key.split(',').map(Number);
+                const cell = crosswordGrid.querySelector(`[data-row='${r}'][data-col='${c}']`);
+                if (cell) {
+                    const numInfo = clueNumbers[key];
+                    const clueNumberSpan = document.createElement('span');
+                    clueNumberSpan.classList.add('clue-number');
+                    clueNumberSpan.textContent = numInfo.num;
+                    cell.appendChild(clueNumberSpan);
+                }
+            }
+        }
+
+        // 정답 확인
+        function checkAnswers() {
+            let allCorrect = true;
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('correct', 'incorrect');
+            resultDiv.textContent = '';
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = crosswordGrid.querySelector(`[data-row='${r}'][data-col='${c}']`);
+                    if (!cell.classList.contains('black')) {
+                        const input = cell.querySelector('input');
+                        const userAnswer = input.value.toUpperCase();
+                        // solution 객체의 키가 존재하지 않을 경우 빈 문자열로 처리 (해당 칸에 정답이 없다는 의미)
+                        const correctAnswer = solution[`${r},${c}`] ? solution[`${r},${c}`].toUpperCase() : '';
+
+                        // 입력값이 없거나 정답과 다르면 오답 처리
+                        if (userAnswer === '' || userAnswer !== correctAnswer) {
+                            allCorrect = false;
+                            input.style.backgroundColor = '#ffe0e0'; // Incorrect color
+                        } else {
+                            input.style.backgroundColor = '#e0ffe0'; // Correct color
+                        }
+                    }
+                }
+            }
+
+            if (allCorrect) {
+                resultDiv.textContent = '축하합니다! 모든 정답을 맞혔어요!';
+                resultDiv.classList.add('correct');
+            } else {
+                resultDiv.textContent = '아직 틀린 곳이 있어요. 다시 확인해보세요!';
+                resultDiv.classList.add('incorrect');
+            }
+        }
+
+        initializeGrid();
+    </script>
+</body>
+</html>
