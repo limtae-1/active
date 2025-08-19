@@ -315,6 +315,43 @@
         }
 
         initializeGrid();
+        // 화살표 키 이동 기능
+        crosswordGrid.addEventListener('keydown', (e) => {
+            if (e.target.tagName !== 'INPUT') return;
+
+            const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+            if (!isArrowKey) return;
+
+            e.preventDefault();
+
+            const currentInput = e.target;
+            let r = parseInt(currentInput.dataset.row, 10);
+            let c = parseInt(currentInput.dataset.col, 10);
+
+            const initialR = r;
+            const initialC = c;
+
+            // 다음 셀을 찾기 위한 루프
+            do {
+                switch (e.key) {
+                    case 'ArrowUp':    r--; break;
+                    case 'ArrowDown':  r++; break;
+                    case 'ArrowLeft':  c--; break;
+                    case 'ArrowRight': c++; break;
+                }
+
+                // 그리드 범위를 벗어나면 중단
+                if (r < 0 || r >= 8 || c < 0 || c >= 8) break;
+                
+                const nextInput = crosswordGrid.querySelector(`input[data-row='${r}'][data-col='${c}']`);
+                if (nextInput) {
+                    nextInput.focus();
+                    return; // 다음 입력 칸을 찾으면 함수 종료
+                }
+            // 그리드 끝까지 갔는데도 다음 칸이 없으면 원래 위치로 돌아오지 않도록 루프를 계속하지 않음
+            } while (r >= 0 && r < 8 && c >= 0 && c < 8)
+        });
     </script>
 </body>
 </html>
+
