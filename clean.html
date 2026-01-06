@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>대청소 구역 랜덤 배정기</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, sans-serif; }
+    body { margin: 0; background: #f6f7fb; color: #111; }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px 40px; }
+    .title { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; }
+    h1 { margin: 0; font-size: 22px; }
+    .sub { margin: 6px 0 0; color:#555; font-size: 13px; }
+    .grid { display:grid; grid-template-columns: 1fr; gap: 14px; margin-top: 16px; }
+    @media (min-width: 960px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background:#fff; border-radius: 14px; padding: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+    .card h2 { margin: 0 0 10px; font-size: 16px; }
+    .row { display:flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+    label { font-size: 13px; color:#333; display:flex; gap:8px; align-items:center; }
+    input, select, textarea, button {
+      font: inherit;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid #d7dbe7;
+      background:#fff;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color:#7b8cff; box-shadow: 0 0 0 3px rgba(123,140,255,.18); }
+    input[type="number"] { width: 110px; }
+    .btns { display:flex; gap: 8px; flex-wrap:wrap; margin-top: 10px; }
+    button { cursor:pointer; border: 1px solid #cfd5ea; background:#f3f5ff; }
+    button.primary { background:#3b5bff; border-color:#3b5bff; color:#fff; }
+    button.danger { background:#fff3f3; border-color:#ffd2d2; }
+    .small { font-size: 12px; color:#666; }
+    .pill { display:inline-flex; gap:8px; align-items:center; background:#eef2ff; color:#2a3cff; padding: 4px 10px; border-radius: 999px; font-size:12px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; overflow:hidden; border-radius: 12px; border:1px solid #e3e7f3; }
+    th, td { padding: 10px; border-bottom: 1px solid #e3e7f3; vertical-align: top; }
+    th { background:#f7f8ff; text-align:left; font-size: 13px; color:#333; }
+    tr:last-child td { border-bottom: none; }
+    .muted { color:#777; }
+    .right { margin-left:auto; }
+    .req-list td:last-child { width: 120px; }
+    .tag { display:inline-block; font-size:12px; color:#444; background:#f1f3f7; padding: 2px 8px; border-radius: 999px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .warn { color:#b45309; }
+    .ok { color:#0f766e; }
+    .error { color:#b91c1c; }
+    textarea { width: 100%; min-height: 140px; resize: vertical; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <div>
+        <h1>대청소 구역 랜덤 배정기</h1>
+        <div class="sub">총 인원과 청소구역별 필요 인원만 입력하면, 출석번호(1~N)를 랜덤으로 자동 배정합니다.</div>
+      </div>
+      <div class="pill" id="statusPill">준비됨</div>
+    </div>
+
+    <div class="grid">
+      <!-- 설정 -->
+      <div class="card">
+        <h2>1) 기본 설정</h2>
+        <div class="row">
+          <label>총 인원수
+            <input type="number" id="totalStudents" min="1" value="25" />
+          </label>
+          <label>출석 시작번호
+            <input type="number" id="startNo" min="0" value="1" />
+          </label>
+          <label>남는 인원 처리
+            <select id="leftoverMode">
+              <option value="unassigned">미배정(공용) 구역에 모으기</option>
+              <option value="roundrobin">기존 구역에 1명씩 돌려배정</option>
+            </select>
+          </label>
+        </div>
+        <div class="small" style="margin-top:8px;">
+          ※ 필요 인원 합이 총 인원보다 <b>크면</b> 배정이 불가합니다. 합이 <b>작으면</b> 남는 인원을 처리 방식에 따라 배정합니다.
+        </div>
+      </div>
+
+      <!-- 구역 목록 관리 -->
+      <div class="card">
+        <h2>2) 청소구역 목록(드롭다운)</h2>
+        <div class="row">
+          <label>구역 추가
+            <input type="text" id="newAreaName" placeholder="예) 창문, 복도, 칠판, 분리수거..." />
+          </label>
+          <button id="addAreaBtn">목록에 추가</button>
+          <button class="danger" id="resetAreasBtn">초기 예시로 되돌리기</button>
+        </div>
+
+        <div class="small" style="margin-top:10px;">현재 목록</div>
+        <div id="areaChips" style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+
+        <div class="small warn" style="margin-top:10px;">
+          ※ 아래 “구역별 필요 인원”에서는 이 목록이 <b>드롭다운</b>으로 표시됩니다.
+        </div>
+      </div>
+
+      <!-- 구역별 필요 인원 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <h2>3) 구역별 필요 인원</h2>
+        <div class="row">
+          <label>구역 선택
+            <select id="areaSelect"></select>
+          </label>
+          <label>필요 인원
+            <input type="number" id="areaNeed" min="1" value="4" />
+          </label>
+          <button id="addReqBtn">추가</button>
+          <div class="right small">
+            필요 인원 합: <b id="sumNeed">0</b> / 총 인원: <b id="sumTotal">0</b>
+            <span class="tag" id="sumHint"></span>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; overflow:auto;">
+          <table class="req-list">
+            <thead>
+              <tr>
+                <th>청소구역</th>
+                <th>필요 인원</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="reqTbody">
+              <!-- rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="assignBtn">🎲 랜덤 배정하기</button>
+          <button id="reshuffleBtn" disabled>🔁 다시 섞기(같은 조건)</button>
+          <button id="copyBtn" disabled>📋 결과 복사</button>
+          <button id="csvBtn" disabled>⬇️ CSV 다운로드</button>
+          <button class="danger" id="clearReqBtn">요구 목록 비우기</button>
+        </div>
+      </div>
+
+      <!-- 결과 -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <h2>4) 배정 결과</h2>
+        <div class="small muted">구역별 배정된 출석번호가 표시됩니다.</div>
+        <div style="margin-top:12px; overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>청소구역</th>
+                <th>배정 인원</th>
+                <th>출석번호</th>
+              </tr>
+            </thead>
+            <tbody id="resultTbody">
+              <tr><td colspan="3" class="muted">아직 배정하지 않았습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="small" style="margin-top:10px;">
+          텍스트 결과(복사용):
+        </div>
+        <textarea id="resultText" class="mono" readonly placeholder="여기에 결과가 생성됩니다."></textarea>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---------- Utils ----------
+  function $(id){ return document.getElementById(id); }
+  function setStatus(text, kind="ok"){
+    const pill = $("statusPill");
+    pill.textContent = text;
+    pill.style.background = kind==="error" ? "#fff1f2" : kind==="warn" ? "#fff7ed" : "#ecfeff";
+    pill.style.color = kind==="error" ? "#b91c1c" : kind==="warn" ? "#b45309" : "#0f766e";
+  }
+  function shuffle(arr){
+    // Fisher-Yates
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function downloadText(filename, text){
+    const blob = new Blob([text], {type:"text/plain;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- State ----------
+  const defaultAreas = ["창문", "바닥", "책상정리", "칠판/교탁", "복도", "분리수거", "사물함", "청소도구정리"];
+  let areas = [...defaultAreas];
+  let requirements = []; // {area, need}
+  let lastAssignment = null; // {reqsUsed, total, startNo, leftoverMode}
+
+  // ---------- UI Rendering ----------
+  function renderAreaChips(){
+    const box = $("areaChips");
+    box.innerHTML = "";
+    areas.forEach((name, idx) => {
+      const chip = document.createElement("span");
+      chip.className = "pill";
+      chip.style.background = "#f1f5f9";
+      chip.style.color = "#334155";
+      chip.innerHTML = `<span>${name}</span>
+        <button title="삭제" style="margin-left:6px; padding:2px 8px; border-radius:999px; border:1px solid #d7dbe7; background:#fff; cursor:pointer;">×</button>`;
+      chip.querySelector("button").addEventListener("click", () => {
+        // 목록에서 삭제 (단, 요구 목록에서 사용 중이면 삭제 방지)
+        const used = requirements.some(r => r.area === name);
+        if(used){
+          alert("이 구역은 '구역별 필요 인원'에서 사용 중이라 삭제할 수 없습니다.\n먼저 요구 목록에서 제거해주세요.");
+          return;
+        }
+        areas.splice(idx, 1);
+        renderAreaChips();
+        renderAreaSelect();
+      });
+      box.appendChild(chip);
+    });
+    if(areas.length === 0){
+      box.innerHTML = `<span class="muted">구역 목록이 비어 있습니다. 구역을 추가해주세요.</span>`;
+    }
+  }
+
+  function renderAreaSelect(){
+    const sel = $("areaSelect");
+    sel.innerHTML = "";
+    areas.forEach(a => {
+      const opt = document.createElement("option");
+      opt.value = a; opt.textContent = a;
+      sel.appendChild(opt);
+    });
+    if(areas.length === 0){
+      const opt = document.createElement("option");
+      opt.value = ""; opt.textContent = "구역 목록이 비어있음";
+      sel.appendChild(opt);
+    }
+  }
+
+  function renderRequirements(){
+    const tb = $("reqTbody");
+    tb.innerHTML = "";
+    requirements.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.area}</td>
+        <td>
+          <input type="number" min="1" value="${r.need}" data-idx="${i}" style="width:90px;" />
+        </td>
+        <td style="text-align:right;">
+          <button class="danger" data-del="${i}">삭제</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+    if(requirements.length === 0){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="3" class="muted">아직 추가된 구역이 없습니다. 위에서 구역을 선택하고 필요 인원을 추가하세요.</td>`;
+      tb.appendChild(tr);
+    }
+
+    // bind need change
+    tb.querySelectorAll('input[type="number"][data-idx]').forEach(inp => {
+      inp.addEventListener("change", (e) => {
+        const idx = Number(e.target.dataset.idx);
+        const v = Number(e.target.value);
+        requirements[idx].need = Math.max(1, Math.floor(v || 1));
+        updateSumHint();
+      });
+    });
+
+    // bind delete
+    tb.querySelectorAll("button[data-del]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const idx = Number(e.target.dataset.del);
+        requirements.splice(idx, 1);
+        updateSumHint();
+        renderRequirements();
+        disableResultButtons();
+      });
+    });
+
+    updateSumHint();
+  }
+
+  function updateSumHint(){
+    const total = Number($("totalStudents").value || 0);
+    const sumNeed = requirements.reduce((s,r) => s + Number(r.need||0), 0);
+    $("sumNeed").textContent = sumNeed;
+    $("sumTotal").textContent = total;
+
+    const hint = $("sumHint");
+    hint.textContent = "";
+
+    if(total <= 0){
+      hint.textContent = "총 인원 입력 필요";
+      hint.className = "tag error";
+      setStatus("총 인원을 입력하세요", "warn");
+      return;
+    }
+
+    if(sumNeed === 0){
+      hint.textContent = "구역/인원 추가 필요";
+      hint.className = "tag warn";
+      setStatus("구역별 필요 인원을 추가하세요", "warn");
+      return;
+    }
+
+    if(sumNeed > total){
+      hint.textContent = "필요 인원 합이 더 큼";
+      hint.className = "tag error";
+      setStatus("필요 인원 합이 총 인원보다 큽니다", "error");
+    } else if(sumNeed < total){
+      hint.textContent = "남는 인원 있음";
+      hint.className = "tag warn";
+      setStatus("남는 인원이 있습니다(처리 방식 적용)", "warn");
+    } else {
+      hint.textContent = "정확히 일치";
+      hint.className = "tag ok";
+      setStatus("배정 준비 완료", "ok");
+    }
+  }
+
+  function disableResultButtons(){
+    $("reshuffleBtn").disabled = true;
+    $("copyBtn").disabled = true;
+    $("csvBtn").disabled = true;
+    lastAssignment = null;
+  }
+
+  // ---------- Core Assignment ----------
+  function makeAssignment(){
+    const total = Math.floor(Number($("totalStudents").value));
+    const startNo = Math.floor(Number($("startNo").value));
+    const leftoverMode = $("leftoverMode").value;
+
+    if(!Number.isFinite(total) || total <= 0){
+      alert("총 인원수는 1 이상이어야 합니다.");
+      return null;
+    }
+    if(!Number.isFinite(startNo)){
+      alert("출석 시작번호를 확인해주세요.");
+      return null;
+    }
+    if(requirements.length === 0){
+      alert("구역별 필요 인원을 하나 이상 추가해주세요.");
+      return null;
+    }
+
+    const sumNeed = requirements.reduce((s,r)=> s + Math.floor(Number(r.need||0)), 0);
+    if(sumNeed > total){
+      alert(`필요 인원 합(${sumNeed})이 총 인원(${total})보다 큽니다.\n필요 인원을 줄이거나 총 인원을 늘려주세요.`);
+      return null;
+    }
+
+    // 출석번호 생성
+    const nums = [];
+    for(let i=0; i<total; i++){
+      nums.push(startNo + i);
+    }
+    shuffle(nums);
+
+    // 기본 배정
+    const result = [];
+    let cursor = 0;
+
+    requirements.forEach(r => {
+      const need = Math.floor(Number(r.need||0));
+      const assigned = nums.slice(cursor, cursor + need);
+      cursor += need;
+      result.push({ area: r.area, assigned });
+    });
+
+    // 남는 인원 처리
+    const leftover = nums.slice(cursor);
+    if(leftover.length > 0){
+      if(leftoverMode === "unassigned"){
+        result.push({ area: "공용/미배정", assigned: leftover });
+      } else {
+        // round-robin
+        let k = 0;
+        while(k < leftover.length){
+          for(let i=0; i<result.length && k < leftover.length; i++){
+            result[i].assigned.push(leftover[k++]);
+          }
+        }
+      }
+    }
+
+    // 결과 텍스트
+    const lines = [];
+    lines.push(`대청소 랜덤 배정 결과`);
+    lines.push(`- 총 인원: ${total}명 (출석 시작번호: ${startNo})`);
+    lines.push(`- 필요 인원 합: ${sumNeed}명`);
+    if(leftover.length > 0){
+      lines.push(`- 남는 인원: ${leftover.length}명 (${leftoverMode === "unassigned" ? "공용/미배정으로 모음" : "돌려배정"})`);
+    }
+    lines.push("");
+    result.forEach(r => {
+      const list = r.assigned.join(", ");
+      lines.push(`[${r.area}] (${r.assigned.length}명) : ${list}`);
+    });
+
+    return {
+      meta: { total, startNo, sumNeed, leftoverCount: leftover.length, leftoverMode },
+      result,
+      text: lines.join("\n")
+    };
+  }
+
+  function renderResult(assignment){
+    const tb = $("resultTbody");
+    tb.innerHTML = "";
+    assignment.result.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${r.area}</b></td>
+        <td>${r.assigned.length}</td>
+        <td class="mono">${r.assigned.join(", ")}</td>
+      `;
+      tb.appendChild(tr);
+    });
+    $("resultText").value = assignment.text;
+
+    $("reshuffleBtn").disabled = false;
+    $("copyBtn").disabled = false;
+    $("csvBtn").disabled = false;
+
+    lastAssignment = {
+      reqsUsed: JSON.parse(JSON.stringify(requirements)),
+      total: assignment.meta.total,
+      startNo: assignment.meta.startNo,
+      leftoverMode: assignment.meta.leftoverMode
+    };
+
+    setStatus("배정 완료", "ok");
+  }
+
+  // ---------- Events ----------
+  $("addAreaBtn").addEventListener("click", () => {
+    const name = $("newAreaName").value.trim();
+    if(!name) return;
+    if(areas.includes(name)){
+      alert("이미 목록에 있는 구역입니다.");
+      return;
+    }
+    areas.push(name);
+    $("newAreaName").value = "";
+    renderAreaChips();
+    renderAreaSelect();
+  });
+
+  $("resetAreasBtn").addEventListener("click", () => {
+    // 사용 중인 구역이 있으면 초기화 방지
+    const usedNames = new Set(requirements.map(r => r.area));
+    if(usedNames.size > 0){
+      alert("요구 목록(구역별 필요 인원)에 사용 중인 구역이 있어 초기화할 수 없습니다.\n먼저 요구 목록을 비운 뒤 다시 시도해주세요.");
+      return;
+    }
+    areas = [...defaultAreas];
+    renderAreaChips();
+    renderAreaSelect();
+  });
+
+  $("addReqBtn").addEventListener("click", () => {
+    if(areas.length === 0){
+      alert("먼저 청소구역 목록에 구역을 추가해주세요.");
+      return;
+    }
+    const area = $("areaSelect").value;
+    const need = Math.max(1, Math.floor(Number($("areaNeed").value || 1)));
+
+    if(!area){
+      alert("구역을 선택해주세요.");
+      return;
+    }
+    // 동일 구역은 1개만 유지(수정은 테이블에서)
+    const exists = requirements.find(r => r.area === area);
+    if(exists){
+      exists.need = need;
+    } else {
+      requirements.push({ area, need });
+    }
+    renderRequirements();
+    disableResultButtons();
+  });
+
+  $("clearReqBtn").addEventListener("click", () => {
+    requirements = [];
+    renderRequirements();
+    $("resultTbody").innerHTML = `<tr><td colspan="3" class="muted">아직 배정하지 않았습니다.</td></tr>`;
+    $("resultText").value = "";
+    disableResultButtons();
+    setStatus("요구 목록을 비웠습니다", "warn");
+  });
+
+  $("totalStudents").addEventListener("change", () => { updateSumHint(); disableResultButtons(); });
+  $("startNo").addEventListener("change", () => { disableResultButtons(); });
+  $("leftoverMode").addEventListener("change", () => { disableResultButtons(); });
+
+  $("assignBtn").addEventListener("click", () => {
+    const assignment = makeAssignment();
+    if(!assignment) return;
+    renderResult(assignment);
+  });
+
+  $("reshuffleBtn").addEventListener("click", () => {
+    if(!lastAssignment){
+      alert("먼저 배정을 실행해주세요.");
+      return;
+    }
+    // 현재 요구 목록이 바뀌었는지 체크(바뀌었으면 안내)
+    const nowSig = JSON.stringify(requirements);
+    const lastSig = JSON.stringify(lastAssignment.reqsUsed);
+    if(nowSig !== lastSig){
+      const ok = confirm("요구 목록이 이전 배정과 달라졌습니다.\n현재 조건으로 다시 섞어 배정할까요?");
+      if(!ok) return;
+    }
+    const assignment = makeAssignment();
+    if(!assignment) return;
+    renderResult(assignment);
+  });
+
+  $("copyBtn").addEventListener("click", async () => {
+    try{
+      await navigator.clipboard.writeText($("resultText").value);
+      setStatus("클립보드에 복사됨", "ok");
+    } catch(e){
+      alert("복사에 실패했습니다. 텍스트 박스에서 직접 복사해주세요.");
+    }
+  });
+
+  $("csvBtn").addEventListener("click", () => {
+    const txt = $("resultText").value.trim();
+    if(!txt){
+      alert("다운로드할 결과가 없습니다.");
+      return;
+    }
+    // CSV: area, count, numbers
+    const rows = [["구역","인원","출석번호"]];
+    const tb = $("resultTbody");
+    const trs = tb.querySelectorAll("tr");
+    trs.forEach(tr => {
+      const tds = tr.querySelectorAll("td");
+      if(tds.length === 3){
+        rows.push([tds[0].innerText.trim(), tds[1].innerText.trim(), tds[2].innerText.trim()]);
+      }
+    });
+    const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
+    downloadText("cleaning_assignment.csv", csv);
+    setStatus("CSV 다운로드 완료", "ok");
+  });
+
+  // ---------- Init ----------
+  function init(){
+    renderAreaChips();
+    renderAreaSelect();
+    renderRequirements();
+    $("sumTotal").textContent = Number($("totalStudents").value || 0);
+    updateSumHint();
+  }
+  init();
+</script>
+</body>
+</html>
